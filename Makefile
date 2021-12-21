@@ -128,3 +128,167 @@ test: gen_data
 	cat sql/relocation.sql | psql q3c_test > results/relocation.out
 	diff results/relocation.out expected/relocation.expected
 	dropdb q3c_test
+
+test_parallel: gen_data
+	dropdb --if-exists q3c_test
+	createdb q3c_test
+	psql q3c_test -c "CREATE TABLE test (ra double precision, dec double precision)"
+	psql q3c_test -c "CREATE TABLE test1 (ra double precision, dec double precision)"
+	psql q3c_test -c "CREATE TABLE test_pm0 (ra double precision, dec double precision, pmra real, pmdec real, epoch real)"
+	psql q3c_test -c "CREATE TABLE test_pm1 (ra double precision, dec double precision, pmra real, pmdec real, epoch real)"
+	psql q3c_test -c "CREATE TABLE test_small (ra double precision, dec double precision)"
+	./gen_data 1 1000000 | psql q3c_test -c "COPY test FROM STDIN WITH DELIMITER ' '"
+	./gen_data 2 1000000 | psql q3c_test -c "COPY test1 FROM STDIN WITH DELIMITER ' '"
+	./gen_data 3 100000 | psql q3c_test -c "COPY test_small FROM STDIN WITH DELIMITER ' '"
+	./gen_data 4 1000000 --withpm --pmscale=0 --randomepoch | psql q3c_test -c "COPY test_pm0 FROM STDIN WITH DELIMITER ' '"
+	./gen_data 5 1000000 --withpm --pmscale=1000 --epoch=2015 | psql q3c_test -c "COPY test_pm1 FROM STDIN WITH DELIMITER ' '"
+	psql q3c_test -c 'CREATE EXTENSION q3c'
+	psql q3c_test -c 'CREATE INDEX q3c_idx1 ON test1 (q3c_ang2ipix(ra,dec))'
+	psql q3c_test -c 'CREATE INdex ON test_pm0 (q3c_ang2ipix(ra,dec))'
+	psql q3c_test -c 'CREATE INDEX on test_pm1 (q3c_ang2ipix(ra,dec))'
+	psql q3c_test -c 'CREATE INDEX q3c_idx ON test (q3c_ang2ipix(ra,dec))'
+	psql q3c_test -c 'CREATE INDEX q3c_idx_small ON test_small (q3c_ang2ipix(ra,dec))'
+	psql q3c_test -c 'ANALYZE test'
+	psql q3c_test -c 'ANALYZE test1'
+	psql q3c_test -c 'ANALYZE test_pm0'
+	psql q3c_test -c 'ANALYZE test_pm1'
+	psql q3c_test -c 'ANALYZE test_small'
+
+	mkdir -p results
+
+	psql q3c_test -f sql/cone.sql -o results/cone1.out & \
+	psql q3c_test -f sql/cone.sql -o results/cone2.out & \
+	sleep 1; \
+	psql q3c_test -f sql/cone.sql -o results/cone3.out & \
+	sleep 3; \
+	psql q3c_test -f sql/cone.sql -o results/cone4.out & \
+	sleep 5; \
+	psql q3c_test -f sql/cone.sql -o results/cone5.out & \
+	wait;
+	diff results/cone1.out expected/cone.expected
+	diff results/cone2.out expected/cone.expected
+	diff results/cone3.out expected/cone.expected
+	diff results/cone4.out expected/cone.expected
+	diff results/cone5.out expected/cone.expected
+
+	psql q3c_test -f sql/cone_join_rev.sql -o results/cone_join_rev1.out & \
+	psql q3c_test -f sql/cone_join_rev.sql -o results/cone_join_rev2.out & \
+	sleep 1; \
+	psql q3c_test -f sql/cone_join_rev.sql -o results/cone_join_rev3.out & \
+	sleep 3; \
+	psql q3c_test -f sql/cone_join_rev.sql -o results/cone_join_rev4.out & \
+	sleep 5; \
+	psql q3c_test -f sql/cone_join_rev.sql -o results/cone_join_rev5.out & \
+	wait;
+	diff results/cone_join_rev1.out expected/cone.expected
+	diff results/cone_join_rev2.out expected/cone.expected
+	diff results/cone_join_rev3.out expected/cone.expected
+	diff results/cone_join_rev4.out expected/cone.expected
+	diff results/cone_join_rev5.out expected/cone.expected
+
+	psql q3c_test -f sql/ellipse.sql -o results/ellipse1.out & \
+	psql q3c_test -f sql/ellipse.sql -o results/ellipse2.out & \
+	sleep 1; \
+	psql q3c_test -f sql/ellipse.sql -o results/ellipse3.out & \
+	sleep 3; \
+	psql q3c_test -f sql/ellipse.sql -o results/ellipse4.out & \
+	sleep 5; \
+	psql q3c_test -f sql/ellipse.sql -o results/ellipse5.out & \
+	wait;
+	diff results/ellipse1.out expected/ellipse.expected
+	diff results/ellipse2.out expected/ellipse.expected
+	diff results/ellipse3.out expected/ellipse.expected
+	diff results/ellipse4.out expected/ellipse.expected
+	diff results/ellipse5.out expected/ellipse.expected
+
+	psql q3c_test -f sql/join.sql -o results/join1.out & \
+	psql q3c_test -f sql/join.sql -o results/join2.out & \
+	sleep 1; \
+	psql q3c_test -f sql/join.sql -o results/join3.out & \
+	sleep 3; \
+	psql q3c_test -f sql/join.sql -o results/join4.out & \
+	sleep 5; \
+	psql q3c_test -f sql/join.sql -o results/join5.out & \
+	wait;
+	diff results/join1.out expected/join.expected
+	diff results/join2.out expected/join.expected
+	diff results/join3.out expected/join.expected
+	diff results/join4.out expected/join.expected
+	diff results/join5.out expected/join.expected
+
+	psql q3c_test -f sql/join_ellipse.sql -o results/join_ellipse1.out & \
+	psql q3c_test -f sql/join_ellipse.sql -o results/join_ellipse2.out & \
+	sleep 1; \
+	psql q3c_test -f sql/join_ellipse.sql -o results/join_ellipse3.out & \
+	sleep 3; \
+	psql q3c_test -f sql/join_ellipse.sql -o results/join_ellipse4.out & \
+	sleep 5; \
+	psql q3c_test -f sql/join_ellipse.sql -o results/join_ellipse5.out & \
+	wait;
+	diff results/join_ellipse1.out expected/join.expected
+	diff results/join_ellipse2.out expected/join.expected
+	diff results/join_ellipse3.out expected/join.expected
+	diff results/join_ellipse4.out expected/join.expected
+	diff results/join_ellipse5.out expected/join.expected
+
+	psql q3c_test -f sql/join_pm1.sql -o results/join_pm11.out & \
+	psql q3c_test -f sql/join_pm1.sql -o results/join_pm12.out & \
+	sleep 1; \
+	psql q3c_test -f sql/join_pm1.sql -o results/join_pm13.out & \
+	sleep 3; \
+	psql q3c_test -f sql/join_pm1.sql -o results/join_pm14.out & \
+	sleep 5; \
+	psql q3c_test -f sql/join_pm1.sql -o results/join_pm15.out & \
+	wait;
+	diff results/join_pm11.out expected/join_pm1.expected
+	diff results/join_pm12.out expected/join_pm1.expected 
+	diff results/join_pm13.out expected/join_pm1.expected 
+	diff results/join_pm14.out expected/join_pm1.expected 
+	diff results/join_pm15.out expected/join_pm1.expected
+
+	psql q3c_test -f sql/join_pm2.sql -o results/join_pm21.out & \
+	psql q3c_test -f sql/join_pm2.sql -o results/join_pm22.out & \
+	sleep 1; \
+	psql q3c_test -f sql/join_pm2.sql -o results/join_pm23.out & \
+	sleep 3; \
+	psql q3c_test -f sql/join_pm2.sql -o results/join_pm24.out & \
+	sleep 5; \
+	psql q3c_test -f sql/join_pm2.sql -o results/join_pm25.out & \
+	wait;
+	diff results/join_pm21.out expected/join_pm2.expected
+	diff results/join_pm22.out expected/join_pm2.expected 
+	diff results/join_pm23.out expected/join_pm2.expected 
+	diff results/join_pm24.out expected/join_pm2.expected 
+	diff results/join_pm25.out expected/join_pm2.expected
+
+	psql q3c_test -f sql/poly.sql -o results/poly1.out & \
+	psql q3c_test -f sql/poly.sql -o results/poly2.out & \
+	sleep 1; \
+	psql q3c_test -f sql/poly.sql -o results/poly3.out & \
+	sleep 3; \
+	psql q3c_test -f sql/poly.sql -o results/poly4.out & \
+	sleep 5; \
+	psql q3c_test -f sql/poly.sql -o results/poly5.out & \
+	wait;
+	diff results/poly1.out expected/poly.expected
+	diff results/poly2.out expected/poly.expected 
+	diff results/poly3.out expected/poly.expected 
+	diff results/poly4.out expected/poly.expected 
+	diff results/poly5.out expected/poly.expected
+
+	psql q3c_test -f sql/poly1.sql -o results/poly11.out & \
+	psql q3c_test -f sql/poly1.sql -o results/poly12.out & \
+	sleep 1; \
+	psql q3c_test -f sql/poly1.sql -o results/poly13.out & \
+	sleep 3; \
+	psql q3c_test -f sql/poly1.sql -o results/poly14.out & \
+	sleep 5; \
+	psql q3c_test -f sql/poly1.sql -o results/poly15.out & \
+	wait;
+	diff results/poly11.out expected/poly.expected
+	diff results/poly12.out expected/poly.expected 
+	diff results/poly13.out expected/poly.expected 
+	diff results/poly14.out expected/poly.expected 
+	diff results/poly15.out expected/poly.expected
+
+	dropdb q3c_test

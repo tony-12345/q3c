@@ -10,19 +10,19 @@ create type q3c_type as (ra double precision, dec double precision,
 CREATE OR REPLACE FUNCTION q3c_seloper(double precision, q3c_type)
         RETURNS bool
         AS 'MODULE_PATHNAME', 'pgq3c_seloper'
-        LANGUAGE C STRICT IMMUTABLE COST 1000;
+        LANGUAGE C STRICT IMMUTABLE PARALLEL SAFE COST 1000;
 
 -- A selectivity function for the q3c operator
 CREATE OR REPLACE FUNCTION q3c_sel(internal, oid, internal, int4)
         RETURNS float8
         AS 'MODULE_PATHNAME', 'pgq3c_sel'
-        LANGUAGE C IMMUTABLE STRICT ;
+        LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE ;
  
 -- A selectivity function for the q3c operator
 CREATE OR REPLACE FUNCTION q3c_seljoin(internal, oid, internal, int2, internal)
         RETURNS float8
         AS 'MODULE_PATHNAME', 'pgq3c_seljoin'
-        LANGUAGE C IMMUTABLE STRICT ;
+        LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE ;
  
 
  -- distance operator with correct selectivity
@@ -38,7 +38,7 @@ CREATE OPERATOR ==<<>>== (
 CREATE OR REPLACE FUNCTION q3c_version()
         RETURNS cstring
         AS 'MODULE_PATHNAME', 'pgq3c_get_version'
-        LANGUAGE C IMMUTABLE STRICT;
+        LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION q3c_version()
 	IS 'Function returning Q3C version';
 
@@ -46,28 +46,28 @@ COMMENT ON FUNCTION q3c_version()
 CREATE OR REPLACE FUNCTION q3c_ang2ipix(double precision, double precision)
         RETURNS bigint
         AS 'MODULE_PATHNAME', 'pgq3c_ang2ipix'
-        LANGUAGE C IMMUTABLE STRICT;
+        LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION q3c_ang2ipix (double precision, double precision)
 	IS 'Function converting Ra and Dec to the Q3C ipix value';
 
 CREATE OR REPLACE FUNCTION q3c_ang2ipix(ra real, decl real)
         RETURNS bigint
         AS 'MODULE_PATHNAME', 'pgq3c_ang2ipix_real'
-        LANGUAGE C IMMUTABLE STRICT;
+        LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION q3c_ang2ipix(real, real)
 	IS 'Function converting Ra and Dec(floats) to the Q3C ipix value';
 
 CREATE OR REPLACE FUNCTION q3c_ipix2ang(ipix bigint)
         RETURNS double precision[]
         AS 'MODULE_PATHNAME', 'pgq3c_ipix2ang'
-        LANGUAGE C IMMUTABLE STRICT;
+        LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION q3c_ipix2ang (bigint)
 	IS 'Function converting the Q3C ipix value to Ra, Dec';
 
 CREATE OR REPLACE FUNCTION q3c_pixarea(ipix bigint, depth int)
         RETURNS double precision
         AS 'MODULE_PATHNAME', 'pgq3c_pixarea'
-        LANGUAGE C IMMUTABLE STRICT;
+        LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION q3c_pixarea (bigint, int )
 	IS 'Function returning the area of the pixel containing ipix being located at certain depth in the quadtree';
 
@@ -76,13 +76,13 @@ CREATE OR REPLACE FUNCTION q3c_ipixcenter(ra double precision, decl double preci
         AS
    'SELECT ((q3c_ang2ipix($1,$2))>>((2*$3))<<((2*$3))) +
 			((1::bigint)<<(2*($3-1))) -1'
-	LANGUAGE SQL;
+	LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
 CREATE OR REPLACE FUNCTION q3c_dist(ra1 double precision, dec1 double precision,
 									ra2 double precision, dec2 double precision)
         RETURNS double precision
         AS 'MODULE_PATHNAME', 'pgq3c_dist'
-        LANGUAGE C IMMUTABLE STRICT;
+        LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE;
 COMMENT ON FUNCTION q3c_dist(double precision, double precision,
 				double precision, double precision)
 	IS 'Function q3c_dist(ra1, dec1, ra2, dec2) computing the distance between points (ra1, dec1) and (ra2, dec2)';
@@ -91,7 +91,7 @@ CREATE OR REPLACE FUNCTION q3c_sindist(double precision, double precision,
                                        double precision, double precision)
         RETURNS double precision
         AS 'MODULE_PATHNAME', 'pgq3c_sindist'
-        LANGUAGE C IMMUTABLE STRICT COST 100;
+        LANGUAGE C IMMUTABLE STRICT PARALLEL SAFE COST 100;
 COMMENT ON FUNCTION q3c_sindist(double precision, double precision,
 				double precision, double precision)
 	IS 'Function q3c_sindist(ra1, dec1, ra2, dec2) computing the sin(distance/2)^2 between points (ra1, dec1) and (ra2, dec2)';
@@ -104,7 +104,7 @@ CREATE OR REPLACE FUNCTION q3c_sindist_pm(
        epoch2 double precision)
         RETURNS double precision
         AS 'MODULE_PATHNAME', 'pgq3c_sindist_pm'
-        LANGUAGE C IMMUTABLE COST 100;
+        LANGUAGE C IMMUTABLE PARALLEL SAFE COST 100;
 
 -- Importantly this is not strict 
 CREATE OR REPLACE FUNCTION q3c_dist_pm(
@@ -115,14 +115,14 @@ CREATE OR REPLACE FUNCTION q3c_dist_pm(
        epoch2 double precision)
         RETURNS double precision
         AS 'MODULE_PATHNAME', 'pgq3c_dist_pm'
-        LANGUAGE C IMMUTABLE COST 100;
+        LANGUAGE C IMMUTABLE PARALLEL SAFE COST 100;
 -- Importantly this is not strict 
 
 CREATE OR REPLACE FUNCTION q3c_nearby_it(double precision, double precision, 
 					 double precision, integer)
         RETURNS bigint
         AS 'MODULE_PATHNAME', 'pgq3c_nearby_it'
-        LANGUAGE C IMMUTABLE STRICT COST 100;
+        LANGUAGE C IMMUTABLE PARALLEL SAFE STRICT COST 100;
 
 CREATE OR REPLACE FUNCTION q3c_nearby_pm_it(
        ra1 double precision, dec1 double precision, 
@@ -131,14 +131,14 @@ CREATE OR REPLACE FUNCTION q3c_nearby_pm_it(
        maxepoch_delta double precision, rad double precision, flag integer)
         RETURNS bigint
         AS 'MODULE_PATHNAME', 'pgq3c_nearby_pm_it'
-        LANGUAGE C IMMUTABLE COST 100; 
+        LANGUAGE C IMMUTABLE PARALLEL SAFE COST 100; 
 -- Importantly this is NOT as strict function because we accept nulls as pms
 
 CREATE OR REPLACE FUNCTION q3c_ellipse_nearby_it(double precision, double precision, 
 		double precision, double precision, double precision, integer)
         RETURNS bigint
         AS 'MODULE_PATHNAME', 'pgq3c_ellipse_nearby_it'
-        LANGUAGE C IMMUTABLE STRICT COST 100;
+        LANGUAGE C IMMUTABLE PARALLEL SAFE STRICT COST 100;
 
 CREATE OR REPLACE FUNCTION q3c_in_ellipse(ra0 double precision, dec0 double precision,
 					ra_ell double precision, dec_ell double precision,
@@ -146,7 +146,7 @@ CREATE OR REPLACE FUNCTION q3c_in_ellipse(ra0 double precision, dec0 double prec
 					pa double precision)
         RETURNS boolean
         AS 'MODULE_PATHNAME', 'pgq3c_in_ellipse'
-        LANGUAGE C IMMUTABLE STRICT COST 100;
+        LANGUAGE C IMMUTABLE PARALLEL SAFE STRICT COST 100;
 
 
 CREATE OR REPLACE FUNCTION q3c_radial_query_it(double precision, 
@@ -155,7 +155,7 @@ CREATE OR REPLACE FUNCTION q3c_radial_query_it(double precision,
 					       integer, integer)
         RETURNS bigint
         AS 'MODULE_PATHNAME', 'pgq3c_radial_query_it'
-        LANGUAGE C IMMUTABLE STRICT;
+        LANGUAGE C IMMUTABLE PARALLEL SAFE STRICT;
 
 
 CREATE OR REPLACE FUNCTION q3c_ellipse_query_it(ra_ell double precision,
@@ -167,33 +167,33 @@ CREATE OR REPLACE FUNCTION q3c_ellipse_query_it(ra_ell double precision,
 												full_flag integer)
 	RETURNS bigint
 	AS 'MODULE_PATHNAME', 'pgq3c_ellipse_query_it'
-LANGUAGE C IMMUTABLE STRICT;
+LANGUAGE C IMMUTABLE PARALLEL SAFE STRICT;
 
 
 CREATE OR REPLACE FUNCTION q3c_poly_query_it(double precision[], integer,
                                              integer)
         RETURNS bigint
         AS 'MODULE_PATHNAME', 'pgq3c_poly_query_it'
-        LANGUAGE C IMMUTABLE STRICT;
+        LANGUAGE C IMMUTABLE PARALLEL SAFE STRICT;
 
 CREATE OR REPLACE FUNCTION q3c_poly_query_it(polygon, integer,
                                              integer)
         RETURNS bigint
         AS 'MODULE_PATHNAME', 'pgq3c_poly_query1_it'
-        LANGUAGE C IMMUTABLE STRICT;
+        LANGUAGE C IMMUTABLE PARALLEL SAFE STRICT;
 
 
 CREATE OR REPLACE FUNCTION q3c_in_poly(double precision, double precision,
 				       double precision[])
         RETURNS boolean
         AS 'MODULE_PATHNAME', 'pgq3c_in_poly'
-        LANGUAGE C IMMUTABLE STRICT;
+        LANGUAGE C IMMUTABLE PARALLEL SAFE STRICT;
 
 CREATE OR REPLACE FUNCTION q3c_in_poly(double precision, double precision,
 				       polygon)
         RETURNS boolean
         AS 'MODULE_PATHNAME', 'pgq3c_in_poly1'
-        LANGUAGE C IMMUTABLE STRICT;
+        LANGUAGE C IMMUTABLE PARALLEL SAFE STRICT;
 
 
 CREATE OR REPLACE FUNCTION q3c_join(leftra double precision, leftdec double precision,
@@ -207,7 +207,7 @@ SELECT (((q3c_ang2ipix($3,$4)>=(q3c_nearby_it($1,$2,$5,0))) AND (q3c_ang2ipix($3
     OR ((q3c_ang2ipix($3,$4)>=(q3c_nearby_it($1,$2,$5,6))) AND (q3c_ang2ipix($3,$4)<=(q3c_nearby_it($1,$2,$5,7))))) 
     AND q3c_sindist($1,$2,$3,$4)<POW(SIN(RADIANS($5)/2),2)
     AND ($5::double precision ==<<>>== ($1,$2,$3,$4)::q3c_type)
-' LANGUAGE SQL IMMUTABLE;
+' LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
  
 CREATE OR REPLACE FUNCTION q3c_join(leftra double precision, leftdec double precision,
@@ -222,7 +222,7 @@ SELECT (((q3c_ang2ipix($3,$4)>=(q3c_nearby_it($1,$2,$5,0))) AND (q3c_ang2ipix($3
     AND q3c_sindist($1,$2,$3,$4)<POW(SIN(RADIANS($5)/2),2)
     AND ($5::double precision ==<<>>== ($1,$2,$3,$4)::q3c_type)
 
-' LANGUAGE SQL IMMUTABLE;
+' LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
 
 
@@ -256,7 +256,7 @@ SELECT (
        (q3c_ang2ipix($7,$8)  <= q3c_nearby_pm_it($1,$2,$3,$4,$5,$10,$11,7)))) 
     AND q3c_sindist_pm($1,$2,$3,$4,$5,$6,$7,$8,$9)<POW(SIN(RADIANS($11)/2),2)
     AND ($10::double precision ==<<>>== ($1,$2,$6,$7)::q3c_type) 
-' LANGUAGE SQL IMMUTABLE;
+' LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 -- not strict
 
 
@@ -272,7 +272,7 @@ SELECT (((q3c_ang2ipix($3,$4)>=(q3c_ellipse_nearby_it($1,$2,$5,$6,$7,0))) AND (q
     OR ((q3c_ang2ipix($3,$4)>=(q3c_ellipse_nearby_it($1,$2,$5,$6,$7,6))) AND (q3c_ang2ipix($3,$4)<=(q3c_ellipse_nearby_it($1,$2,$5,$6,$7,7))))) 
     AND q3c_in_ellipse($3,$4,$1,$2,$5,$6,$7)
     AND ($5::double precision ==<<>>== ($1,$2,$3,$4)::q3c_type) 
-' LANGUAGE SQL IMMUTABLE;
+' LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
 CREATE OR REPLACE FUNCTION q3c_radial_query(
                   real, real,
@@ -380,7 +380,7 @@ CREATE OR REPLACE FUNCTION q3c_radial_query(
 (q3c_ang2ipix($1,$2)>=q3c_radial_query_it($3,$4,$5,98,0) AND q3c_ang2ipix($1,$2)<q3c_radial_query_it($3,$4,$5,99,0)) 
 ) AND
 q3c_sindist($1,$2,$3,$4)<POW(SIN(RADIANS($5)/2),2)
-' LANGUAGE SQL IMMUTABLE;
+' LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
 CREATE OR REPLACE FUNCTION q3c_radial_query(
                   double precision, double precision,
@@ -489,7 +489,7 @@ CREATE OR REPLACE FUNCTION q3c_radial_query(
 (q3c_ang2ipix($1,$2)>=q3c_radial_query_it($3,$4,$5,98,0) AND q3c_ang2ipix($1,$2)<q3c_radial_query_it($3,$4,$5,99,0)) 
 ) AND
 q3c_sindist($1,$2,$3,$4)<POW(SIN(RADIANS($5)/2),2)
-' LANGUAGE SQL IMMUTABLE;
+' LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
 CREATE OR REPLACE FUNCTION q3c_ellipse_query(
                 ra_col double precision, dec_col double precision,
@@ -600,7 +600,7 @@ CREATE OR REPLACE FUNCTION q3c_ellipse_query(
 (q3c_ang2ipix($1,$2)>=q3c_ellipse_query_it($3,$4,$5,$6,$7,98,0) AND q3c_ang2ipix($1,$2)<q3c_ellipse_query_it($3,$4,$5,$6,$7,99,0)) 
 ) AND 
 q3c_in_ellipse($1,$2,$3,$4,$5,$6,$7)
-' LANGUAGE SQL IMMUTABLE;
+' LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
 
 
@@ -713,7 +713,7 @@ CREATE OR REPLACE FUNCTION q3c_poly_query(
 (q3c_ang2ipix($1,$2)>=q3c_poly_query_it($3,98,0) AND q3c_ang2ipix($1,$2)<q3c_poly_query_it($3,99,0)) 
 ) AND 
 q3c_in_poly($1,$2,$3);
-' LANGUAGE SQL IMMUTABLE;
+' LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
 CREATE OR REPLACE FUNCTION q3c_poly_query(
                 real, real,
@@ -822,7 +822,7 @@ CREATE OR REPLACE FUNCTION q3c_poly_query(
 (q3c_ang2ipix($1,$2)>=q3c_poly_query_it($3,98,0) AND q3c_ang2ipix($1,$2)<q3c_poly_query_it($3,99,0)) 
 ) AND 
 q3c_in_poly($1,$2,$3) ;
-' LANGUAGE SQL IMMUTABLE;
+' LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
 
 CREATE OR REPLACE FUNCTION q3c_poly_query(
@@ -932,7 +932,7 @@ CREATE OR REPLACE FUNCTION q3c_poly_query(
 (q3c_ang2ipix($1,$2)>=q3c_poly_query_it($3,98,0) AND q3c_ang2ipix($1,$2)<q3c_poly_query_it($3,99,0)) 
 ) AND 
 q3c_in_poly($1,$2,$3) ;
-' LANGUAGE SQL IMMUTABLE;
+' LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
 
 CREATE OR REPLACE FUNCTION q3c_poly_query(
@@ -1042,5 +1042,5 @@ CREATE OR REPLACE FUNCTION q3c_poly_query(
 (q3c_ang2ipix($1,$2)>=q3c_poly_query_it($3,98,0) AND q3c_ang2ipix($1,$2)<q3c_poly_query_it($3,99,0)) 
 ) AND 
 q3c_in_poly($1,$2,$3) ;
-' LANGUAGE SQL IMMUTABLE;
+' LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
