@@ -1,0 +1,27 @@
+explain verbose select count(*) from test1 as a, test as b where q3c_join(a.ra,a.dec,b.ra,b.dec,0.042);                                                                                                                                                                                                                                                                                                                                                                                                                 QUERY PLAN                                                                                                                                                                                                                                                                                                                                                                                                                 
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=891206767271.90..891206767271.91 rows=1 width=8)
+   Output: count(*)
+   ->  Gather  (cost=891206767271.68..891206767271.89 rows=2 width=8)
+         Output: (PARTIAL count(*))
+         Workers Planned: 2
+         ->  Partial Aggregate  (cost=891206766271.68..891206766271.69 rows=1 width=8)
+               Output: PARTIAL count(*)
+               ->  Nested Loop  (cost=4448.18..891206766254.17 rows=7006 width=0)
+                     ->  Parallel Seq Scan on public.test1 a  (cost=0.00..9572.67 rows=416667 width=16)
+                           Output: a.ra, a."dec"
+                     ->  Bitmap Heap Scan on public.test b  (cost=4448.18..2138894.49 rows=1 width=16)
+                           Output: b.ra, b."dec"
+                           Recheck Cond: (((q3c_ang2ipix(b.ra, b."dec") >= q3c_nearby_it(a.ra, a."dec", '0.042'::double precision, 0)) AND (q3c_ang2ipix(b.ra, b."dec") <= q3c_nearby_it(a.ra, a."dec", '0.042'::double precision, 1))) OR ((q3c_ang2ipix(b.ra, b."dec") >= q3c_nearby_it(a.ra, a."dec", '0.042'::double precision, 2)) AND (q3c_ang2ipix(b.ra, b."dec") <= q3c_nearby_it(a.ra, a."dec", '0.042'::double precision, 3))) OR ((q3c_ang2ipix(b.ra, b."dec") >= q3c_nearby_it(a.ra, a."dec", '0.042'::double precision, 4)) AND (q3c_ang2ipix(b.ra, b."dec") <= q3c_nearby_it(a.ra, a."dec", '0.042'::double precision, 5))) OR ((q3c_ang2ipix(b.ra, b."dec") >= q3c_nearby_it(a.ra, a."dec", '0.042'::double precision, 6)) AND (q3c_ang2ipix(b.ra, b."dec") <= q3c_nearby_it(a.ra, a."dec", '0.042'::double precision, 7))))
+                           Filter: ((q3c_sindist(a.ra, a."dec", b.ra, b."dec") < '1.3433627611052635e-07'::double precision) AND ('0.042'::double precision ==<<>>== ROW(a.ra, a."dec", b.ra, b."dec")::q3c_type))
+                           ->  BitmapOr  (cost=4448.18..4448.18 rows=444444 width=0)
+                                 ->  Bitmap Index Scan on q3c_idx  (cost=0.00..1112.05 rows=111111 width=0)
+                                       Index Cond: ((q3c_ang2ipix(b.ra, b."dec") >= q3c_nearby_it(a.ra, a."dec", '0.042'::double precision, 0)) AND (q3c_ang2ipix(b.ra, b."dec") <= q3c_nearby_it(a.ra, a."dec", '0.042'::double precision, 1)))
+                                 ->  Bitmap Index Scan on q3c_idx  (cost=0.00..1112.05 rows=111111 width=0)
+                                       Index Cond: ((q3c_ang2ipix(b.ra, b."dec") >= q3c_nearby_it(a.ra, a."dec", '0.042'::double precision, 2)) AND (q3c_ang2ipix(b.ra, b."dec") <= q3c_nearby_it(a.ra, a."dec", '0.042'::double precision, 3)))
+                                 ->  Bitmap Index Scan on q3c_idx  (cost=0.00..1112.05 rows=111111 width=0)
+                                       Index Cond: ((q3c_ang2ipix(b.ra, b."dec") >= q3c_nearby_it(a.ra, a."dec", '0.042'::double precision, 4)) AND (q3c_ang2ipix(b.ra, b."dec") <= q3c_nearby_it(a.ra, a."dec", '0.042'::double precision, 5)))
+                                 ->  Bitmap Index Scan on q3c_idx  (cost=0.00..1112.05 rows=111111 width=0)
+                                       Index Cond: ((q3c_ang2ipix(b.ra, b."dec") >= q3c_nearby_it(a.ra, a."dec", '0.042'::double precision, 6)) AND (q3c_ang2ipix(b.ra, b."dec") <= q3c_nearby_it(a.ra, a."dec", '0.042'::double precision, 7)))
+(23 rows)
+
